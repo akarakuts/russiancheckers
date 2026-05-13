@@ -1,0 +1,28 @@
+# --- Android / Gradle ---
+*.iml
+**/*.iml
+.gradle/
+**/build/
+/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+.kotlin/
+
+# IDE (Android Studio / IntelliJ): entire .idea/ is machine-local, not versioned
+.idea/
+
+# OS ---
+.DS_Store
+Thumbs.db
+
+# Logs / heap dumps at repo root
+*.log
+*.hprof
+
+# Release signing (never commit secrets or keystores)
+keystore.properties
+upload-keystore.jks
+*.jks
+*.keystore

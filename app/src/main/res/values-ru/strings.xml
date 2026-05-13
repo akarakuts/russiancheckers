@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Русские шашки</string>
+    <string name="nav_play">Игра</string>
+    <string name="nav_rules">Правила</string>
+    <string name="nav_settings">Настройки</string>
+    <string name="screen_play">Партия</string>
+    <string name="screen_rules">Правила</string>
+    <string name="screen_settings">Настройки</string>
+    <string name="exit">Выход</string>
+    <string name="new_game">Новая партия</string>
+    <string name="turn_white">Ход белых</string>
+    <string name="turn_black">Ход чёрных</string>
+    <string name="winner_white">Победили белые</string>
+    <string name="winner_black">Победили чёрные</string>
+    <string name="hint_mandatory_capture">Нужно бить. Выберите подсвеченную шашку, затем пройдите всю цепочку взятия по клеткам.</string>
+    <string name="hint_tap_chain">Тап по своей шашке, затем по каждой посадке по порядку. Повторный тап по первой клетке — отмена выбора.</string>
+    <string name="ai_thinking">Компьютер думает…</string>
+    <string name="ai_thinking_short">Ход компьютера</string>
+    <string name="status_your_turn">Ваш ход</string>
+    <string name="status_opponent_turn">Ход соперника</string>
+    <string name="status_you_are_white">Вы играете белыми (внизу доски).</string>
+    <string name="status_you_are_black">Вы играете чёрными (вверху доски).</string>
+    <string name="settings_section_game">Режим</string>
+    <string name="settings_vs_bot">Играть против компьютера</string>
+    <string name="settings_vs_bot_sub">Программа перебирает ходы (не сильнейший мастер, но мешает).</string>
+    <string name="settings_human_color">Ваш цвет</string>
+    <string name="play_as_white">Белые</string>
+    <string name="play_as_black">Чёрные</string>
+    <string name="settings_bot_note">Первыми всегда ходят белые. Если вы за чёрных, партию начнёт компьютер.</string>
+    <string name="settings_section_data">Сохранение</string>
+    <string name="settings_new_party_clear">Новая партия (сбросить автосохранение)</string>
+    <string name="settings_ai_difficulty">Сила компьютера</string>
+    <string name="settings_ai_difficulty_sub">На высоких уровнях перебор глубже (на слабых устройствах может занять время).</string>
+    <string name="difficulty_easy">Лёгкий</string>
+    <string name="difficulty_normal">Нормальный</string>
+    <string name="difficulty_hard">Сложный</string>
+    <string name="rules_body">Русские шашки на доске 8×8, только тёмные клетки, по 12 шашек. Белые начинают игру.\n\nПростая шашка ходит на одну клетку по диагонали только вперёд (к стороне соперника). Взятие обязательно, если оно возможно; если есть несколько цепочек взятий, нужно выбрать такую, в которой снимается максимум шашек соперника.\n\nПростая бьёт через одну соседнюю шашку соперника на пустую клетку за ней — во всех четырёх диагональных направлениях. За один ход можно выполнить несколько прыжков той же шашкой.\n\nДамка (после достижения дальнего ряда) ходит на любое число пустых клеток по диагонали. Бьёт «дальнобойно»: перепрыгивает ровно одну шашку соперника на линии и приземляется на любую пустую клетку за ней.\n\nПобеда, если у соперника не осталось шашек или он не может сделать ход.\n\nИгра с компьютером: включите режим в «Настройках», выберите цвет и выполняйте обязательные взятия по подсказкам. Текущая позиция сохраняется автоматически и восстанавливается после выхода из приложения.</string>
+</resources>

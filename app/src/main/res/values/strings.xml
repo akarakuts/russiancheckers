@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Russian checkers</string>
+    <string name="nav_play">Play</string>
+    <string name="nav_rules">Rules</string>
+    <string name="nav_settings">Settings</string>
+    <string name="screen_play">Game</string>
+    <string name="screen_rules">Rules</string>
+    <string name="screen_settings">Settings</string>
+    <string name="exit">Exit</string>
+    <string name="new_game">New game</string>
+    <string name="turn_white">White to move</string>
+    <string name="turn_black">Black to move</string>
+    <string name="winner_white">White wins</string>
+    <string name="winner_black">Black wins</string>
+    <string name="hint_mandatory_capture">Capture is mandatory. Pick a piece highlighted in green, then finish the full capture chain.</string>
+    <string name="hint_tap_chain">Tap your piece, then each landing square in order. Tap the same piece again to cancel.</string>
+    <string name="ai_thinking">Computer is thinking…</string>
+    <string name="ai_thinking_short">Computer move</string>
+    <string name="status_your_turn">Your move</string>
+    <string name="status_opponent_turn">Opponent\'s move</string>
+    <string name="status_you_are_white">You play as White (bottom).</string>
+    <string name="status_you_are_black">You play as Black (top).</string>
+    <string name="settings_section_game">Game mode</string>
+    <string name="settings_vs_bot">Play vs computer</string>
+    <string name="settings_vs_bot_sub">The computer uses a lookahead search (not perfect, but tricky).</string>
+    <string name="settings_human_color">Your color</string>
+    <string name="play_as_white">White</string>
+    <string name="play_as_black">Black</string>
+    <string name="settings_bot_note">White always moves first. If you play Black, the computer opens the game.</string>
+    <string name="settings_section_data">Saved game</string>
+    <string name="settings_new_party_clear">New game (clears autosave)</string>
+    <string name="settings_ai_difficulty">Computer strength</string>
+    <string name="settings_ai_difficulty_sub">Higher levels search deeper moves (slower on weak devices).</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_normal">Normal</string>
+    <string name="difficulty_hard">Hard</string>
+    <string name="rules_body">Russian draughts on an 8×8 board, dark squares only, 12 pieces per side. White moves first.\n\nA man moves one step diagonally forward (toward the opponent). Captures are mandatory when possible; if several capture sequences exist, you must choose one that removes the maximum number of opponent pieces.\n\nA man captures by jumping over an adjacent opponent to an empty square immediately beyond, in any diagonal direction. Multiple jumps in one turn are chained with the same piece.\n\nA king (crowned on the last rank) moves any distance along a diagonal over empty squares. A king captures by jumping over exactly one opponent on that diagonal, landing on any empty square beyond it (long capture).\n\nYou win if the opponent has no pieces left or cannot move.\n\nComputer opponent: enable it in Settings, pick your color, and finish your capture chains when prompted. The current position is saved automatically and restored after you leave the app.</string>
+</resources>
