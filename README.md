@@ -33,6 +33,16 @@ See `app/build.gradle.kts` for versions and the full dependency list.
 - **Android SDK** with compile SDK **36** (minor 1 as in the project); **minSdk 24**, **targetSdk 36**
 - **Android Studio** Ladybug+ or Gradle **8+/9+** via `./gradlew`
 
+## CI & automation
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| [CI](.github/workflows/ci.yml) | push / PR to `main`, manual | `:app:check` (unit tests, Lint, compile) |
+| [Security](.github/workflows/security.yml) | push / PR to `main`, weekly | OSV dependency scan, CodeQL |
+| [Release](.github/workflows/release.yml) | tag `v*` | Upload-keystore–signed **APK + AAB** + GitHub Release (requires secrets) |
+
+[Dependabot](.github/dependabot.yml) opens weekly PRs for Gradle and GitHub Actions dependencies.
+
 ## Build & run
 
 ```bash
@@ -55,6 +65,25 @@ Release builds use your **upload keystore** when `keystore.properties` exists; o
 ```
 
 RuStore and similar consoles: follow their docs for AAB / certificate upload, e.g. [RuStore — upload AAB](https://www.rustore.ru/help/developers/publishing-and-verifying-apps/app-publication/new-version-app/upload-aab).
+
+If **`keystore.properties` is missing**, `release` still signs with the **debug** keystore so the project builds on fresh clones — **do not** upload that build to RuStore.
+
+### GitHub Actions tag releases (`v*`)
+
+Configure these **repository secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|--------|-------|
+| `RELEASE_KEYSTORE_BASE64` | Base64 of `upload-keystore.jks` (e.g. `base64 -i upload-keystore.jks \| tr -d '\n'` on macOS) |
+| `RELEASE_STORE_PASSWORD` | Keystore password |
+| `RELEASE_KEY_ALIAS` | Key alias (e.g. `upload`) |
+| `RELEASE_KEY_PASSWORD` | Key password |
+
+The [Release](.github/workflows/release.yml) workflow writes `keystore.properties` and `upload-keystore.jks` on the runner, then runs **`assembleRelease`** and **`bundleRelease`**, and attaches **`russiancheckers-<tag>.apk`** and **`.aab`** to the GitHub Release. If any secret is missing, the workflow **fails** with an error message (no silent debug-signed store builds).
+
+## GitHub Releases
+
+Tagged pushes (`v*`) run the Release workflow: **APK + AAB** signed with your **upload keystore** from GitHub secrets. Without secrets the workflow fails on purpose (see table above).
 
 ## Project layout
 

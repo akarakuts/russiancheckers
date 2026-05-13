@@ -1,0 +1,136 @@
+# Push tag v*: OSV scan → signed release APK + AAB → GitHub Release.
+# Signing uses upload keystore from GitHub Actions secrets (see README).
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  osv-scan:
+    name: OSV (pre-release)
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    with:
+      fail-on-vuln: false
+      scan-args: |-
+        --allow-no-lockfiles
+        --recursive
+        ./
+
+  build-and-publish:
+    name: Build signed APK/AAB and publish GitHub Release
+    needs: osv-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Prepare upload keystore (from secrets)
+        env:
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KEYSTORE_B64:-}" ] || [ -z "${STORE_PASSWORD:-}" ] || [ -z "${KEY_ALIAS:-}" ] || [ -z "${KEY_PASSWORD:-}" ]; then
+            echo '::error::Set repository secrets: RELEASE_KEYSTORE_BASE64, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD'
+            echo 'See README: "Release signing (RuStore / GitHub Actions)".'
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/upload-keystore.jks"
+          python3 <<'PY'
+          import os
+          from pathlib import Path
+
+          def escape_java_properties_value(s: str) -> str:
+              out = []
+              for c in s:
+                  if c == "\\":
+                      out.append("\\\\")
+                  elif c == "\n":
+                      out.append("\\n")
+                  elif c == "\r":
+                      out.append("\\r")
+                  elif c == "\t":
+                      out.append("\\t")
+                  elif c == ":":
+                      out.append("\\:")
+                  elif c == "=":
+                      out.append("\\=")
+                  else:
+                      out.append(c)
+              return "".join(out)
+
+          root = Path(os.environ["GITHUB_WORKSPACE"])
+          lines = [
+              "storeFile=upload-keystore.jks",
+              "storePassword=" + escape_java_properties_value(os.environ["STORE_PASSWORD"]),
+              "keyAlias=" + escape_java_properties_value(os.environ["KEY_ALIAS"]),
+              "keyPassword=" + escape_java_properties_value(os.environ["KEY_PASSWORD"]),
+          ]
+          (root / "keystore.properties").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Assemble signed release APK and AAB
+        run: chmod +x ./gradlew && ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --stacktrace
+
+      - name: Stage artifacts for upload
+        id: art
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          APKS=(app/build/outputs/apk/release/*.apk)
+          AABS=(app/build/outputs/bundle/release/*.aab)
+          if [[ ${#APKS[@]} -eq 0 ]]; then
+            echo "No APK under app/build/outputs/apk/release/"
+            exit 1
+          fi
+          if [[ ${#AABS[@]} -eq 0 ]]; then
+            echo "No AAB under app/build/outputs/bundle/release/"
+            exit 1
+          fi
+          TAG="${GITHUB_REF_NAME}"
+          APK_OUT="russiancheckers-${TAG}.apk"
+          AAB_OUT="russiancheckers-${TAG}.aab"
+          cp "${APKS[0]}" "$APK_OUT"
+          cp "${AABS[0]}" "$AAB_OUT"
+          echo "apk=$APK_OUT" >> "$GITHUB_OUTPUT"
+          echo "aab=$AAB_OUT" >> "$GITHUB_OUTPUT"
+          ls -la "$APK_OUT" "$AAB_OUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            ${{ steps.art.outputs.apk }}
+            ${{ steps.art.outputs.aab }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true

@@ -19,6 +19,10 @@ English: [README.md](README.md)
 
 Как в [README.md](README.md): JDK 11+, Android SDK (compile 36, min 24), `./gradlew :app:assembleDebug` / установка через Android Studio.
 
+## CI (GitHub Actions)
+
+Как в англ. README: [CI](.github/workflows/ci.yml) (`:app:check`), [Security](.github/workflows/security.yml) (OSV + CodeQL по расписанию), [Release](.github/workflows/release.yml) по тегу `v*` (подписанные APK/AAB в GitHub Release). Нужны секреты `RELEASE_KEYSTORE_BASE64`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD` — см. раздел подписи в [README.md](README.md). [Dependabot](.github/dependabot.yml) — еженедельные PR по Gradle и Actions.
+
 ## Подпись релиза
 
 Скопируйте [`keystore.properties.example`](keystore.properties.example) в **`keystore.properties`** в корне репозитория и укажите свой keystore; затем `./gradlew :app:assembleRelease :app:bundleRelease`. Без `keystore.properties` релиз подписывается **отладочным** ключом — такой сборкой в магазины выкладывать нельзя.
