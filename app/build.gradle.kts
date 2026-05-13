@@ -50,6 +50,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Upload keystore (keystore.properties) → store-ready signing (RuStore, etc.).
+            // Without it, release uses the debug keystore so local/unsigned-debug CI APKs still install.
             signingConfig = if (hasUploadKeystore) {
                 signingConfigs.getByName("upload")
             } else {

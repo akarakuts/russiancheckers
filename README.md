@@ -1,4 +1,4 @@
-# Russiancheckers
+# Russian checkers
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
@@ -50,25 +50,40 @@ See `app/build.gradle.kts` for versions and the full dependency list.
 ./gradlew :app:installDebug
 ```
 
-Open the `app` run configuration in Android Studio and deploy to a device or emulator.
+Open the `app` run configuration in Android Studio and deploy to a device or emulator. For **store-ready** signed builds, see [Release signing (RuStore / GitHub Actions)](#release-signing-rustore--github-actions).
 
-## Release signing (RuStore / stores)
+## Release signing (RuStore / GitHub Actions)
 
-Release builds use your **upload keystore** when `keystore.properties` exists; otherwise they fall back to the **debug** keystore (fine for local testing only — **do not** publish that build).
+RuStore and similar stores expect a **release build signed with your upload key** (AAB is typical for publication). Official RuStore steps (certificate / AAB upload) are in their help centre, e.g. [upload AAB / signing](https://www.rustore.ru/help/developers/publishing-and-verifying-apps/app-publication/new-version-app/upload-aab).
 
-1. Copy [`keystore.properties.example`](keystore.properties.example) to **`keystore.properties`** in the repo root (gitignored).
-2. Point `storeFile`, passwords, and `keyAlias` at your keystore.
+Gradle uses the same pattern as [tic-tac-toe-android](https://github.com/akarakuts/tic-tac-toe-android): `app/build.gradle.kts` loads **`keystore.properties`** from the repo root; if it exists, **`signingConfigs.upload`** is applied to **`release`**; otherwise **`release`** uses the **debug** keystore so fresh clones and CI still build installable APKs.
+
+### 1. Create an upload keystore (once)
+
+```bash
+keytool -genkeypair -v \
+  -keystore upload-keystore.jks \
+  -alias upload \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Keep **`upload-keystore.jks`** and passwords in a password manager; **back up** the file — without it you cannot ship compatible updates.
+
+### 2. Local signed `release` builds
+
+1. Copy [`keystore.properties.example`](keystore.properties.example) to **`keystore.properties`** in the **repository root** (this file is gitignored).
+2. Set `storeFile`, passwords, and `keyAlias` to match your keystore.
 3. Run:
 
 ```bash
 ./gradlew :app:assembleRelease :app:bundleRelease
 ```
 
-RuStore and similar consoles: follow their docs for AAB / certificate upload, e.g. [RuStore — upload AAB](https://www.rustore.ru/help/developers/publishing-and-verifying-apps/app-publication/new-version-app/upload-aab).
+Outputs: `app/build/outputs/apk/release/*.apk` and `app/build/outputs/bundle/release/*.aab`.
 
 If **`keystore.properties` is missing**, `release` still signs with the **debug** keystore so the project builds on fresh clones — **do not** upload that build to RuStore.
 
-### GitHub Actions tag releases (`v*`)
+### 3. GitHub Actions tag releases (`v*`)
 
 Configure these **repository secrets** (Settings → Secrets and variables → Actions):
 

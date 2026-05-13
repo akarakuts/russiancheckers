@@ -21,7 +21,7 @@ Thumbs.db
 *.log
 *.hprof
 
-# Release signing (never commit secrets or keystores)
+# Release upload keystore (never commit secrets or binary keystore)
 keystore.properties
 upload-keystore.jks
 *.jks
