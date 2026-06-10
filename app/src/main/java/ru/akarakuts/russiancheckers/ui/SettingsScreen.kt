@@ -1,14 +1,15 @@
 package ru.akarakuts.russiancheckers.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -22,64 +23,68 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import ru.akarakuts.russiancheckers.R
 import ru.akarakuts.russiancheckers.game.AiDifficulty
 
-/** Bot, colour, AI strength, and new-game actions. */
+/** Bot, colour, AI strength, coordinates, and new-game actions. */
 @Composable
-fun SettingsScreen(vm: CheckersViewModel, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    vm: CheckersViewModel,
+    onNewGameRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val state by vm.state.collectAsState()
     val scroll = rememberScrollState()
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(scroll)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = stringResource(R.string.settings_section_game),
             style = MaterialTheme.typography.titleMedium,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.settings_vs_bot),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text = stringResource(R.string.settings_vs_bot_sub),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = state.botEnabled,
-                onCheckedChange = vm::setBotEnabled,
-            )
-        }
+        SettingsToggleRow(
+            title = stringResource(R.string.settings_vs_bot),
+            subtitle = stringResource(R.string.settings_vs_bot_sub),
+            checked = state.botEnabled,
+            onCheckedChange = vm::setBotEnabled,
+        )
+        SettingsToggleRow(
+            title = stringResource(R.string.settings_show_coordinates),
+            subtitle = stringResource(R.string.settings_show_coordinates_sub),
+            checked = state.showCoordinates,
+            onCheckedChange = vm::setShowCoordinates,
+        )
         if (state.botEnabled) {
             Text(
                 text = stringResource(R.string.settings_human_color),
                 style = MaterialTheme.typography.titleSmall,
             )
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .selectableGroup(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FilterChip(
                     selected = state.humanIsWhite,
                     onClick = { vm.setHumanIsWhite(true) },
                     label = { Text(stringResource(R.string.play_as_white)) },
+                    modifier = Modifier.semantics { role = Role.RadioButton },
                 )
                 FilterChip(
                     selected = !state.humanIsWhite,
                     onClick = { vm.setHumanIsWhite(false) },
                     label = { Text(stringResource(R.string.play_as_black)) },
+                    modifier = Modifier.semantics { role = Role.RadioButton },
                 )
             }
             Text(
@@ -96,21 +101,30 @@ fun SettingsScreen(vm: CheckersViewModel, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .selectableGroup(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 FilterChip(
                     selected = state.aiDifficulty == AiDifficulty.Easy,
                     onClick = { vm.setAiDifficulty(AiDifficulty.Easy) },
                     label = { Text(stringResource(R.string.difficulty_easy)) },
+                    modifier = Modifier.semantics { role = Role.RadioButton },
                 )
                 FilterChip(
                     selected = state.aiDifficulty == AiDifficulty.Normal,
                     onClick = { vm.setAiDifficulty(AiDifficulty.Normal) },
                     label = { Text(stringResource(R.string.difficulty_normal)) },
+                    modifier = Modifier.semantics { role = Role.RadioButton },
                 )
                 FilterChip(
                     selected = state.aiDifficulty == AiDifficulty.Hard,
                     onClick = { vm.setAiDifficulty(AiDifficulty.Hard) },
                     label = { Text(stringResource(R.string.difficulty_hard)) },
+                    modifier = Modifier.semantics { role = Role.RadioButton },
                 )
             }
         }
@@ -120,11 +134,37 @@ fun SettingsScreen(vm: CheckersViewModel, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.titleMedium,
         )
         OutlinedButton(
-            onClick = { vm.newGame() },
+            onClick = onNewGameRequest,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.settings_new_party_clear))
         }
-        Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun SettingsToggleRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }

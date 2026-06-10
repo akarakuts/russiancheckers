@@ -19,20 +19,23 @@ class GamePreferencesRepository(context: Context) {
 
     suspend fun loadSettings(): CheckersSettings {
         val p = ds.data.first()
-        val bot = p[KEY_BOT] ?: false
-        val humanWhite = p[KEY_HUMAN_WHITE] ?: true
-        val diff = AiDifficulty.fromCode(p[KEY_AI_DIFFICULTY])
-        return CheckersSettings(bot, humanWhite, diff)
+        return CheckersSettings(
+            botEnabled = p[KEY_BOT] ?: true,
+            humanIsWhite = p[KEY_HUMAN_WHITE] ?: true,
+            aiDifficulty = AiDifficulty.fromCode(p[KEY_AI_DIFFICULTY]),
+            showCoordinates = p[KEY_SHOW_COORDS] ?: true,
+        )
     }
 
-    suspend fun loadGameOrNull(): Triple<Board, Side, Side?>? {
+    /** Returns saved game or null; [LoadGameResult.Corrupt] if save flag set but data invalid. */
+    suspend fun loadGame(): LoadGameResult {
         val p = ds.data.first()
-        if (p[KEY_HAS_SAVE] != true) return null
-        val enc = p[KEY_BOARD] ?: return null
-        val board = Board.decodeBoard(enc) ?: return null
+        if (p[KEY_HAS_SAVE] != true) return LoadGameResult.None
+        val enc = p[KEY_BOARD] ?: return LoadGameResult.Corrupt
+        val board = Board.decodeBoard(enc) ?: return LoadGameResult.Corrupt
         val turn = p[KEY_TURN]?.toSideOrNull() ?: Side.White
         val winner = p[KEY_WINNER]?.toWinnerOrNull()
-        return Triple(board, turn, winner)
+        return LoadGameResult.Ok(Triple(board, turn, winner))
     }
 
     suspend fun saveGame(board: Board, turn: Side, winner: Side?) {
@@ -49,6 +52,7 @@ class GamePreferencesRepository(context: Context) {
             e[KEY_BOT] = settings.botEnabled
             e[KEY_HUMAN_WHITE] = settings.humanIsWhite
             e[KEY_AI_DIFFICULTY] = settings.aiDifficulty.code
+            e[KEY_SHOW_COORDS] = settings.showCoordinates
         }
     }
 
@@ -69,7 +73,14 @@ class GamePreferencesRepository(context: Context) {
         val KEY_BOT = booleanPreferencesKey("bot")
         val KEY_HUMAN_WHITE = booleanPreferencesKey("human_white")
         val KEY_AI_DIFFICULTY = stringPreferencesKey("ai_difficulty")
+        val KEY_SHOW_COORDS = booleanPreferencesKey("show_coords")
     }
+}
+
+sealed class LoadGameResult {
+    data object None : LoadGameResult()
+    data object Corrupt : LoadGameResult()
+    data class Ok(val game: Triple<Board, Side, Side?>) : LoadGameResult()
 }
 
 private fun Side.toCode(): String = when (this) {

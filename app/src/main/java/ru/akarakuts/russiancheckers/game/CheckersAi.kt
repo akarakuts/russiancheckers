@@ -49,11 +49,9 @@ object CheckersAi {
     }
 
     private fun evaluate(board: Board, forSide: Side): Int {
-        var m = evaluateMaterial(board, forSide)
-        val mob = RussianCheckersEngine.legalPaths(board, forSide).size -
-            RussianCheckersEngine.legalPaths(board, forSide.other()).size
-        m += mob
-        return m
+        val myMob = RussianCheckersEngine.legalPaths(board, forSide).size
+        val theirMob = RussianCheckersEngine.legalPaths(board, forSide.other()).size
+        return evaluateMaterial(board, forSide) + (myMob - theirMob)
     }
 
     private fun evaluateMaterial(board: Board, forSide: Side): Int {

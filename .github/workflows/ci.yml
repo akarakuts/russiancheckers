@@ -34,5 +34,11 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
+      - name: String resource parity (en / ru)
+        run: chmod +x ./scripts/check_strings_parity.sh && ./scripts/check_strings_parity.sh
+
       - name: Check (tests + lint + compile)
         run: chmod +x ./gradlew && ./gradlew :app:check --no-daemon --stacktrace
+
+      - name: Release assemble (unsigned / debug-signed)
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace

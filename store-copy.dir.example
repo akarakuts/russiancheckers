@@ -1,0 +1,3 @@
+# Одна строка: каталог для копии скриншотов 9:16 (опционально, scripts/capture_store_screenshots.sh).
+# Скопируйте в store-copy.dir (файл в .gitignore).
+/path/to/screenshots

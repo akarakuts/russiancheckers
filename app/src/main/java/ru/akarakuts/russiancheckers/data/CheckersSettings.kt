@@ -7,4 +7,5 @@ data class CheckersSettings(
     val botEnabled: Boolean,
     val humanIsWhite: Boolean,
     val aiDifficulty: AiDifficulty,
+    val showCoordinates: Boolean = true,
 )

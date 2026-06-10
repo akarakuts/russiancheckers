@@ -28,6 +28,10 @@ class Board private constructor(private val cells: Array<Array<Piece?>>) {
     }
 
     companion object {
+        fun empty(): Board = Board(Array(8) { arrayOfNulls(8) })
+
+        fun fromEncoded(encoded: String): Board? = decodeBoard(encoded)
+
         fun initial(): Board {
             val g = Array(8) { arrayOfNulls<Piece>(8) }
             for (r in 0..7) for (c in 0..7) {

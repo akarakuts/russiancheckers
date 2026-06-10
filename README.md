@@ -12,7 +12,7 @@ Russian / Русский: [README.ru.md](README.ru.md)
 - **Modes** — two players on one device or **vs computer** (negamax + α–β, depth capped by difficulty).
 - **AI difficulty** — Easy / Medium / Hard; persisted with other settings.
 - **Persistence** — current position, side to move, and preferences via **DataStore**.
-- **UI** — **Play** (board, path selection, status, new game), **Rules** (short in-app reference), **Settings** (mode, difficulty, coordinates on/off). Bottom navigation; **Exit** finishes the activity. Layout adapts to phone and tablet width.
+- **UI** — **Play** (board, path selection, status, new game), **Rules** (short in-app reference), **Settings** (mode, difficulty, board coordinates on/off). Bottom navigation; **Exit** with confirmation. Layout adapts to phone and tablet width.
 - **Locales** — English and Russian (`values` / `values-ru`).
 
 ## Android stack
@@ -50,13 +50,13 @@ See `app/build.gradle.kts` for versions and the full dependency list.
 ./gradlew :app:installDebug
 ```
 
-Open the `app` run configuration in Android Studio and deploy to a device or emulator. For **store-ready** signed builds, see [Release signing (RuStore / GitHub Actions)](#release-signing-rustore--github-actions).
+Open the `app` run configuration in Android Studio and deploy to a device or emulator. For **signed release** builds, see [Release signing](#release-signing).
 
-## Release signing (RuStore / GitHub Actions)
+**Launcher icons:** adaptive layers in `app/src/main/res/drawable/ic_launcher_*.xml`; run `.venv-icon/bin/python scripts/generate_launcher_icons.py` (Pillow in `.venv-icon`) to refresh all `mipmap-*/ic_launcher*.webp` and the 512×512 store asset under `docs/`.
 
-RuStore and similar stores expect a **release build signed with your upload key** (AAB is typical for publication). Official RuStore steps (certificate / AAB upload) are in their help centre, e.g. [upload AAB / signing](https://www.rustore.ru/help/developers/publishing-and-verifying-apps/app-publication/new-version-app/upload-aab).
+## Release signing
 
-Gradle uses the same pattern as [tic-tac-toe-android](https://github.com/akarakuts/tic-tac-toe-android): `app/build.gradle.kts` loads **`keystore.properties`** from the repo root; if it exists, **`signingConfigs.upload`** is applied to **`release`**; otherwise **`release`** uses the **debug** keystore so fresh clones and CI still build installable APKs.
+`app/build.gradle.kts` loads **`keystore.properties`** from the repo root; if it exists, **`signingConfigs.upload`** is applied to **`release`**; otherwise **`release`** uses the **debug** keystore so fresh clones and CI still build installable APKs.
 
 ### 1. Create an upload keystore (once)
 
@@ -81,7 +81,7 @@ Keep **`upload-keystore.jks`** and passwords in a password manager; **back up** 
 
 Outputs: `app/build/outputs/apk/release/*.apk` and `app/build/outputs/bundle/release/*.aab`.
 
-If **`keystore.properties` is missing**, `release` still signs with the **debug** keystore so the project builds on fresh clones — **do not** upload that build to RuStore.
+If **`keystore.properties` is missing**, `release` still signs with the **debug** keystore so the project builds on fresh clones — **do not** publish that build to an app store.
 
 ### 3. GitHub Actions tag releases (`v*`)
 
@@ -113,10 +113,30 @@ Tagged pushes (`v*`) run the Release workflow: **APK + AAB** signed with your **
 
 ## Testing
 
-Unit and instrumentation test stubs live under `app/src/test` and `app/src/androidTest`. Extend them for engine edge cases and UI flows as needed.
+```bash
+./gradlew :app:check
+./scripts/check_strings_parity.sh   # en / ru string keys
+```
+
+Unit tests cover the rules engine (captures, promotion, kings); a Compose smoke test lives under `app/src/androidTest`.
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/build_release.sh` | Signed APK/AAB → path from `store-upload.dir` (see `store-upload.dir.example`) |
+| `scripts/check_strings_parity.sh` | Verify `values` / `values-ru` string key parity |
+| `scripts/generate_launcher_icons.py` | Regenerate launcher webp + 512×512 store asset |
+| `scripts/capture_store_screenshots.sh` | Emulator screenshots for store listing (optional) |
+
+## Contact
+
+**Aleksey Karakuts** — [aleksey@karakuts.com](mailto:aleksey@karakuts.com)
 
 ## License
 
 This program is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License** as published by the Free Software Foundation, either **version 3** of the License, or (at your option) any later version.
 
 See the [`LICENSE`](LICENSE) file for the full GPLv3 text.
+
+Copyright (C) 2026 Aleksey Karakuts &lt;aleksey@karakuts.com&gt;

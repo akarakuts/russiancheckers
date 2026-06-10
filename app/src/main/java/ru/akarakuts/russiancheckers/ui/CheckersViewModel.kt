@@ -3,14 +3,18 @@ package ru.akarakuts.russiancheckers.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ru.akarakuts.russiancheckers.data.CheckersSettings
 import ru.akarakuts.russiancheckers.data.GamePreferencesRepository
+import ru.akarakuts.russiancheckers.data.LoadGameResult
 import ru.akarakuts.russiancheckers.game.AiDifficulty
 import ru.akarakuts.russiancheckers.game.Board
 import ru.akarakuts.russiancheckers.game.CheckersAi
@@ -23,13 +27,15 @@ import ru.akarakuts.russiancheckers.game.Side
 data class CheckersUiState(
     val board: Board = Board.initial(),
     val turn: Side = Side.White,
-    val candidatePaths: List<Path> = RussianCheckersEngine.legalPaths(Board.initial(), Side.White),
+    val candidatePaths: List<Path> = emptyList(),
     val pathPrefix: List<Pos> = emptyList(),
     val winner: Side? = null,
-    val botEnabled: Boolean = false,
+    val botEnabled: Boolean = true,
     val humanIsWhite: Boolean = true,
     val aiDifficulty: AiDifficulty = AiDifficulty.Normal,
+    val showCoordinates: Boolean = true,
     val aiThinking: Boolean = false,
+    val saveLoadFailed: Boolean = false,
 ) {
     fun humanSide(): Side = if (humanIsWhite) Side.White else Side.Black
 
@@ -39,7 +45,8 @@ data class CheckersUiState(
     val captureRequired: Boolean
         get() = winner == null && RussianCheckersEngine.hasForcedCapture(board, turn)
 
-    val legalStarts: Set<Pos> = candidatePaths.map { it.first() }.toSet()
+    val legalStarts: Set<Pos>
+        get() = candidatePaths.map { it.first() }.toSet()
 
     fun nextOptions(): Set<Pos> {
         if (winner != null || aiThinking) return emptySet()
@@ -58,23 +65,36 @@ class CheckersViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(CheckersUiState())
     val state: StateFlow<CheckersUiState> = _state.asStateFlow()
 
+    private var aiJob: Job? = null
+    private var gameGeneration = 0
+
     init {
         viewModelScope.launch {
             val settings = repo.loadSettings()
-            val loaded = repo.loadGameOrNull()
-            _state.value = if (loaded != null) {
-                val (b, t, w) = loaded
-                rebuildGameState(settings, b, t, w)
-            } else {
-                CheckersUiState(
-                    botEnabled = settings.botEnabled,
-                    humanIsWhite = settings.humanIsWhite,
-                    aiDifficulty = settings.aiDifficulty,
-                    candidatePaths = RussianCheckersEngine.legalPaths(Board.initial(), Side.White),
-                )
+            val loaded = repo.loadGame()
+            _state.value = when (loaded) {
+                is LoadGameResult.Ok -> {
+                    val (b, t, w) = loaded.game
+                    rebuildGameState(settings, b, t, w)
+                }
+                LoadGameResult.Corrupt -> freshGameState(settings).copy(saveLoadFailed = true)
+                LoadGameResult.None -> freshGameState(settings)
             }
             maybeAiTurn()
         }
+    }
+
+    private fun freshGameState(settings: CheckersSettings): CheckersUiState {
+        val b = Board.initial()
+        return CheckersUiState(
+            board = b,
+            turn = Side.White,
+            candidatePaths = RussianCheckersEngine.legalPaths(b, Side.White),
+            botEnabled = settings.botEnabled,
+            humanIsWhite = settings.humanIsWhite,
+            aiDifficulty = settings.aiDifficulty,
+            showCoordinates = settings.showCoordinates,
+        )
     }
 
     private fun rebuildGameState(
@@ -93,13 +113,14 @@ class CheckersViewModel(app: Application) : AndroidViewModel(app) {
             botEnabled = settings.botEnabled,
             humanIsWhite = settings.humanIsWhite,
             aiDifficulty = settings.aiDifficulty,
+            showCoordinates = settings.showCoordinates,
             aiThinking = false,
         )
     }
 
     private fun currentSettings(): CheckersSettings {
         val s = _state.value
-        return CheckersSettings(s.botEnabled, s.humanIsWhite, s.aiDifficulty)
+        return CheckersSettings(s.botEnabled, s.humanIsWhite, s.aiDifficulty, s.showCoordinates)
     }
 
     private fun persist() {
@@ -110,19 +131,31 @@ class CheckersViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun cancelAi() {
+        aiJob?.cancel()
+        aiJob = null
+        _state.update { it.copy(aiThinking = false) }
+    }
+
     private fun maybeAiTurn() {
         val s = _state.value
         if (s.winner != null || s.aiThinking || !s.botEnabled || s.turn == s.humanSide()) return
-        viewModelScope.launch {
+        val generation = gameGeneration
+        aiJob?.cancel()
+        aiJob = viewModelScope.launch {
             _state.update { it.copy(aiThinking = true) }
             delay(160)
+            if (generation != gameGeneration) return@launch
             val cur = _state.value
             if (cur.winner != null || cur.turn == cur.humanSide()) {
                 _state.update { it.copy(aiThinking = false) }
                 return@launch
             }
-            val path = CheckersAi.chooseMove(cur.board, cur.turn, cur.aiDifficulty)
-                ?: RussianCheckersEngine.legalPaths(cur.board, cur.turn).firstOrNull()
+            val path = withContext(Dispatchers.Default) {
+                CheckersAi.chooseMove(cur.board, cur.turn, cur.aiDifficulty)
+                    ?: RussianCheckersEngine.legalPaths(cur.board, cur.turn).firstOrNull()
+            }
+            if (generation != gameGeneration) return@launch
             if (path == null) {
                 _state.update { it.copy(aiThinking = false) }
                 return@launch
@@ -159,17 +192,20 @@ class CheckersViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun onCellClicked(cell: Pos) {
-        val s0 = _state.value
-        if (!s0.isHumanTurn || s0.aiThinking) return
+        val before = _state.value
+        if (!before.isHumanTurn || before.aiThinking) return
+        var changed = false
         _state.update { s ->
             if (s.winner != null) return@update s
             if (!cell.isPlayable()) return@update s
             val next = s.nextOptions()
             if (cell !in next) {
                 if (s.pathPrefix.size == 1 && cell == s.pathPrefix.first()) {
+                    changed = true
                     return@update s.copy(pathPrefix = emptyList())
                 }
                 if (s.pathPrefix.isNotEmpty() && cell in s.legalStarts && cell != s.pathPrefix.first()) {
+                    changed = true
                     return@update s.copy(pathPrefix = listOf(cell))
                 }
                 return@update s
@@ -180,15 +216,26 @@ class CheckersViewModel(app: Application) : AndroidViewModel(app) {
             }
             if (still.isEmpty()) return@update s
             val finished = still.any { it.size == newPrefix.size }
-            if (!finished) return@update s.copy(pathPrefix = newPrefix)
-            val path = still.first { it.size == newPrefix.size }
-            applyPathToState(s, path)
+            if (!finished) {
+                changed = true
+                return@update s.copy(pathPrefix = newPrefix)
+            }
+            changed = true
+            applyPathToState(s, still.first { it.size == newPrefix.size })
         }
-        persist()
-        maybeAiTurn()
+        if (changed) {
+            persist()
+            maybeAiTurn()
+        }
+    }
+
+    fun dismissSaveLoadError() {
+        _state.update { it.copy(saveLoadFailed = false) }
     }
 
     fun newGame() {
+        cancelAi()
+        gameGeneration++
         val s0 = _state.value
         val b = Board.initial()
         _state.value = CheckersUiState(
@@ -200,7 +247,9 @@ class CheckersViewModel(app: Application) : AndroidViewModel(app) {
             botEnabled = s0.botEnabled,
             humanIsWhite = s0.humanIsWhite,
             aiDifficulty = s0.aiDifficulty,
+            showCoordinates = s0.showCoordinates,
             aiThinking = false,
+            saveLoadFailed = false,
         )
         viewModelScope.launch {
             repo.clearSavedGame()
@@ -212,12 +261,13 @@ class CheckersViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setBotEnabled(enabled: Boolean) {
         val cur = _state.value
-        val old = cur.botEnabled
+        if (cur.botEnabled == enabled) return
         val hw = cur.humanIsWhite
         val diff = cur.aiDifficulty
+        val coords = cur.showCoordinates
         _state.update { it.copy(botEnabled = enabled) }
-        viewModelScope.launch { repo.saveSettings(CheckersSettings(enabled, hw, diff)) }
-        if (enabled != old) newGame()
+        viewModelScope.launch { repo.saveSettings(CheckersSettings(enabled, hw, diff, coords)) }
+        newGame()
     }
 
     fun setHumanIsWhite(white: Boolean) {
@@ -225,8 +275,9 @@ class CheckersViewModel(app: Application) : AndroidViewModel(app) {
         if (cur.humanIsWhite == white) return
         val bot = cur.botEnabled
         val diff = cur.aiDifficulty
+        val coords = cur.showCoordinates
         _state.update { it.copy(humanIsWhite = white) }
-        viewModelScope.launch { repo.saveSettings(CheckersSettings(bot, white, diff)) }
+        viewModelScope.launch { repo.saveSettings(CheckersSettings(bot, white, diff, coords)) }
         if (bot) newGame()
     }
 
@@ -235,7 +286,19 @@ class CheckersViewModel(app: Application) : AndroidViewModel(app) {
         if (cur.aiDifficulty == difficulty) return
         val bot = cur.botEnabled
         val hw = cur.humanIsWhite
+        val coords = cur.showCoordinates
         _state.update { it.copy(aiDifficulty = difficulty) }
-        viewModelScope.launch { repo.saveSettings(CheckersSettings(bot, hw, difficulty)) }
+        viewModelScope.launch { repo.saveSettings(CheckersSettings(bot, hw, difficulty, coords)) }
+    }
+
+    fun setShowCoordinates(show: Boolean) {
+        val cur = _state.value
+        if (cur.showCoordinates == show) return
+        _state.update { it.copy(showCoordinates = show) }
+        viewModelScope.launch {
+            repo.saveSettings(
+                CheckersSettings(cur.botEnabled, cur.humanIsWhite, cur.aiDifficulty, show),
+            )
+        }
     }
 }

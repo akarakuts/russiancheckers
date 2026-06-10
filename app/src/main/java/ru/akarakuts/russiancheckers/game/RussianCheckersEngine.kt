@@ -29,16 +29,9 @@ object RussianCheckersEngine {
                 b[cap] = null
             }
             cur = to
+            piece = promoteIfLastRank(piece, cur)
         }
-        var promoted = piece
-        if (!promoted.isKing) {
-            val last = path.last()
-            promoted = when (promoted.side) {
-                Side.White -> if (last.r == 0) promoted.copy(isKing = true) else promoted
-                Side.Black -> if (last.r == 7) promoted.copy(isKing = true) else promoted
-            }
-        }
-        b[path.last()] = promoted
+        b[path.last()] = promoteIfLastRank(piece, path.last())
         return b
     }
 
@@ -69,9 +62,10 @@ object RussianCheckersEngine {
         }
         for (to in leaps) {
             val cap = findSingleCaptured(board, at, to, side) ?: continue
+            val landed = promoteIfLastRank(piece, to)
             val b2 = board.copy()
             b2[cap] = null
-            b2[to] = piece
+            b2[to] = landed
             b2[at] = null
             dfsCaptures(b2, to, side, path + to, acc)
         }
@@ -136,6 +130,15 @@ object RussianCheckersEngine {
             r += dr; c += dc
         }
         return enemy
+    }
+
+    /** Man becomes king immediately on the promotion rank (including mid-capture). */
+    private fun promoteIfLastRank(piece: Piece, at: Pos): Piece {
+        if (piece.isKing) return piece
+        return when (piece.side) {
+            Side.White -> if (at.r == 0) piece.copy(isKing = true) else piece
+            Side.Black -> if (at.r == 7) piece.copy(isKing = true) else piece
+        }
     }
 
     // Simple (non-capture) moves

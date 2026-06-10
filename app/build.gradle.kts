@@ -20,8 +20,8 @@ android {
         applicationId = "ru.akarakuts.russiancheckers"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 8
+        versionName = "1.0.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -45,12 +45,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Upload keystore (keystore.properties) → store-ready signing (RuStore, etc.).
+            // Upload keystore (keystore.properties) → release signing for store publication.
             // Without it, release uses the debug keystore so local/unsigned-debug CI APKs still install.
             signingConfig = if (hasUploadKeystore) {
                 signingConfigs.getByName("upload")
@@ -70,7 +71,7 @@ android {
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.material:material-icons-core")
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

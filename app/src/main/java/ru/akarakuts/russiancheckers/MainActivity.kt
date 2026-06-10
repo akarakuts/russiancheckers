@@ -1,5 +1,6 @@
 package ru.akarakuts.russiancheckers
 
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,6 +17,8 @@ import ru.akarakuts.russiancheckers.ui.theme.RussianCheckersTheme
 /** Single-activity entry: edge-to-edge Compose, [CheckersViewModel], root [RussianCheckersApp]. */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Портрет без датчика; дублирует манифест на API < 36 и после смены конфигурации.
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -24,7 +27,7 @@ class MainActivity : ComponentActivity() {
                     factory = ViewModelProvider.AndroidViewModelFactory.getInstance(application),
                 )
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    RussianCheckersApp(vm)
+                    RussianCheckersApp(vm, onExit = { finish() })
                 }
             }
         }

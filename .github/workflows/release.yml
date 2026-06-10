@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           if [ -z "${KEYSTORE_B64:-}" ] || [ -z "${STORE_PASSWORD:-}" ] || [ -z "${KEY_ALIAS:-}" ] || [ -z "${KEY_PASSWORD:-}" ]; then
             echo '::error::Set repository secrets: RELEASE_KEYSTORE_BASE64, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD'
-            echo 'See README: "Release signing (RuStore / GitHub Actions)".'
+            echo 'See README: "Release signing".'
             exit 1
           fi
           echo "$KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/upload-keystore.jks"

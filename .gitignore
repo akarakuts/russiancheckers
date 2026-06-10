@@ -10,6 +10,9 @@
 local.properties
 .kotlin/
 
+# Local venv for scripts/generate_launcher_icons.py
+.venv-icon/
+
 # IDE (Android Studio / IntelliJ): entire .idea/ is machine-local, not versioned
 .idea/
 
@@ -26,3 +29,15 @@ keystore.properties
 upload-keystore.jks
 *.jks
 *.keystore
+/docs/
+
+# Cursor rules (могут содержать локальные пути публикации)
+.cursor/
+
+# Локальные каталоги для release / скриншотов (см. *.example)
+store-upload.dir
+store-copy.dir
+
+# Локальные артефакты release (устаревший каталог в корне репозитория)
+/rustore-release/
+
