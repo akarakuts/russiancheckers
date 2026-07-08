@@ -201,6 +201,8 @@ fun RussianCheckersApp(
                     onCell = vm::onCellClicked,
                     onNewGameRequest = { showNewGameDialog = true },
                     onDismissSaveError = vm::dismissSaveLoadError,
+                    onUndo = vm::undo,
+                    onHint = vm::requestHint,
                 )
             }
             composable(NavRoutes.RULES) {

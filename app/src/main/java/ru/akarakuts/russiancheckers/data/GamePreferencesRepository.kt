@@ -1,8 +1,11 @@
 package ru.akarakuts.russiancheckers.data
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
@@ -12,10 +15,10 @@ import ru.akarakuts.russiancheckers.game.Side
 
 private val Context.checkersDataStore by preferencesDataStore(name = "russian_checkers_prefs")
 
-/** DataStore-backed game snapshot and settings. */
-class GamePreferencesRepository(context: Context) {
-    private val appContext = context.applicationContext
-    private val ds get() = appContext.checkersDataStore
+/** DataStore-backed game snapshot and settings; DataStore is injectable for tests. */
+class GamePreferencesRepository internal constructor(private val ds: DataStore<Preferences>) {
+
+    constructor(context: Context) : this(context.applicationContext.checkersDataStore)
 
     suspend fun loadSettings(): CheckersSettings {
         val p = ds.data.first()
@@ -24,7 +27,45 @@ class GamePreferencesRepository(context: Context) {
             humanIsWhite = p[KEY_HUMAN_WHITE] ?: true,
             aiDifficulty = AiDifficulty.fromCode(p[KEY_AI_DIFFICULTY]),
             showCoordinates = p[KEY_SHOW_COORDS] ?: true,
+            soundEnabled = p[KEY_SOUND] ?: true,
+            hapticsEnabled = p[KEY_HAPTICS] ?: true,
         )
+    }
+
+    suspend fun loadStats(): GameStats {
+        val p = ds.data.first()
+        return GameStats(
+            wins = p[KEY_WINS] ?: 0,
+            losses = p[KEY_LOSSES] ?: 0,
+            winStreak = p[KEY_STREAK] ?: 0,
+            bestStreak = p[KEY_BEST_STREAK] ?: 0,
+        )
+    }
+
+    /** Records a finished bot game and returns the updated stats. */
+    suspend fun recordResult(humanWon: Boolean): GameStats {
+        var result = GameStats()
+        ds.edit { e ->
+            val wins = (e[KEY_WINS] ?: 0) + if (humanWon) 1 else 0
+            val losses = (e[KEY_LOSSES] ?: 0) + if (humanWon) 0 else 1
+            val streak = if (humanWon) (e[KEY_STREAK] ?: 0) + 1 else 0
+            val best = maxOf(e[KEY_BEST_STREAK] ?: 0, streak)
+            e[KEY_WINS] = wins
+            e[KEY_LOSSES] = losses
+            e[KEY_STREAK] = streak
+            e[KEY_BEST_STREAK] = best
+            result = GameStats(wins, losses, streak, best)
+        }
+        return result
+    }
+
+    suspend fun resetStats() {
+        ds.edit { e ->
+            e.remove(KEY_WINS)
+            e.remove(KEY_LOSSES)
+            e.remove(KEY_STREAK)
+            e.remove(KEY_BEST_STREAK)
+        }
     }
 
     /** Returns saved game or null; [LoadGameResult.Corrupt] if save flag set but data invalid. */
@@ -53,6 +94,8 @@ class GamePreferencesRepository(context: Context) {
             e[KEY_HUMAN_WHITE] = settings.humanIsWhite
             e[KEY_AI_DIFFICULTY] = settings.aiDifficulty.code
             e[KEY_SHOW_COORDS] = settings.showCoordinates
+            e[KEY_SOUND] = settings.soundEnabled
+            e[KEY_HAPTICS] = settings.hapticsEnabled
         }
     }
 
@@ -74,6 +117,12 @@ class GamePreferencesRepository(context: Context) {
         val KEY_HUMAN_WHITE = booleanPreferencesKey("human_white")
         val KEY_AI_DIFFICULTY = stringPreferencesKey("ai_difficulty")
         val KEY_SHOW_COORDS = booleanPreferencesKey("show_coords")
+        val KEY_SOUND = booleanPreferencesKey("sound")
+        val KEY_HAPTICS = booleanPreferencesKey("haptics")
+        val KEY_WINS = intPreferencesKey("stat_wins")
+        val KEY_LOSSES = intPreferencesKey("stat_losses")
+        val KEY_STREAK = intPreferencesKey("stat_streak")
+        val KEY_BEST_STREAK = intPreferencesKey("stat_best_streak")
     }
 }
 

@@ -9,17 +9,18 @@ Russian / Русский: [README.ru.md](README.ru.md)
 ## Features
 
 - **Rules** — Russian draughts on a dark board: men move diagonally forward, capture by jump, **must take the longest capture sequence** when several exist; promotion to king on the far rank; kings move any distance diagonally (including capture chains).
-- **Modes** — two players on one device or **vs computer** (negamax + α–β, depth capped by difficulty).
-- **AI difficulty** — Easy / Medium / Hard; persisted with other settings.
-- **Persistence** — current position, side to move, and preferences via **DataStore**.
-- **UI** — **Play** (board, path selection, status, new game), **Rules** (short in-app reference), **Settings** (mode, difficulty, board coordinates on/off). Bottom navigation; **Exit** with confirmation. Layout adapts to phone and tablet width.
+- **Modes** — two players on one device or **vs computer** (negamax + α–β, iterative deepening with a time budget and a transposition table).
+- **AI difficulty** — Easy / Medium / Hard / Expert; persisted with other settings.
+- **Quality of life** — move/capture animations, last-move highlight, **undo**, **hint**, move history in notation, sounds and haptics (both optional), game-over screen with confetti, win/loss statistics.
+- **Persistence** — current position, side to move, preferences, and statistics via **DataStore**.
+- **UI** — **Play** (board, path selection, status, new game), **Rules** (short in-app reference), **Settings** (mode, difficulty, coordinates, sound, vibration, statistics). Bottom navigation; **Exit** with confirmation. Night board palette and a wide tablet layout.
 - **Locales** — English and Russian (`values` / `values-ru`).
 
 ## Android stack
 
 | Area | Choice |
 |------|--------|
-| UI | Compose Material 3, `material-icons-extended` |
+| UI | Compose Material 3, `material-icons-core` |
 | Navigation | Navigation Compose |
 | State | ViewModel, Lifecycle Compose |
 | Async | Kotlin Coroutines (Android) |
@@ -116,9 +117,20 @@ Tagged pushes (`v*`) run the Release workflow: **APK + AAB** signed with your **
 ```bash
 ./gradlew :app:check
 ./scripts/check_strings_parity.sh   # en / ru string keys
+./gradlew :app:connectedDebugAndroidTest   # Compose UI tests (device / emulator)
 ```
 
-Unit tests cover the rules engine (captures, promotion, kings); a Compose smoke test lives under `app/src/androidTest`.
+| Suite | Location | Coverage |
+|-------|----------|----------|
+| Engine | `app/src/test/.../RussianCheckersEngineTest.kt` | Captures, promotion, kings, `capturedAlong` |
+| AI | `app/src/test/.../CheckersAiTest.kt` | Legal moves, forced capture, time budget |
+| ViewModel | `app/src/test/.../CheckersViewModelTest.kt` | Undo, hint, move log (Robolectric) |
+| DataStore | `app/src/test/.../GamePreferencesRepositoryTest.kt` | Settings, save game, stats |
+| Compose UI | `app/src/androidTest/.../PlayScreenComposeTest.kt` | Controls, game-over overlay |
+
+Robolectric unit tests need **JDK 21** (same as CI). DataStore tests use an isolated temp file per test class.
+
+Release builds ship a **baseline profile** (`app/src/main/baseline-prof.txt`) installed via `profileinstaller` for faster cold start.
 
 ## Scripts
 
@@ -127,6 +139,7 @@ Unit tests cover the rules engine (captures, promotion, kings); a Compose smoke 
 | `scripts/build_release.sh` | Signed APK/AAB → path from `store-upload.dir` (see `store-upload.dir.example`) |
 | `scripts/check_strings_parity.sh` | Verify `values` / `values-ru` string key parity |
 | `scripts/generate_launcher_icons.py` | Regenerate launcher webp + 512×512 store asset |
+| `scripts/generate_sounds.py` | Regenerate game sounds (`res/raw/snd_*.wav`) |
 | `scripts/capture_store_screenshots.sh` | Emulator screenshots for store listing (optional) |
 
 ## Contact

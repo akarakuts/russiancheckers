@@ -1,0 +1,5 @@
+# Baseline profile: pre-compile (AOT) app classes on install via profileinstaller.
+# The app is small, so a blanket rule over the package keeps startup jank-free;
+# Compose/AndroidX ship their own profiles and are merged automatically by AGP.
+HSPLru/akarakuts/russiancheckers/**->**(**)**
+Lru/akarakuts/russiancheckers/**

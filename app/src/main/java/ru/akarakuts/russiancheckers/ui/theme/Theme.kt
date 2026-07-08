@@ -25,6 +25,11 @@ private val DarkColors = darkColorScheme(
     onSurface = Color(0xFFE8E0D8),
 )
 
+/** Board palette that follows the system light/dark theme. */
+@Composable
+fun boardPalette(): BoardPalette =
+    if (isSystemInDarkTheme()) NightBoardPalette else LightBoardPalette
+
 /** Material 3 shell: dynamic colour on API 31+, else static schemes tuned for the board. */
 @Composable
 fun RussianCheckersTheme(

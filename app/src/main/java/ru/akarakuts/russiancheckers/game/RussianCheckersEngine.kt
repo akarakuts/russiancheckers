@@ -35,6 +35,26 @@ object RussianCheckersEngine {
         return b
     }
 
+    /** Positions captured while walking [path] on [board] (empty for a simple move). */
+    fun capturedAlong(board: Board, path: Path): List<Pos> {
+        if (path.size < 2) return emptyList()
+        val b = board.copy()
+        val side = b[path.first()]?.side ?: return emptyList()
+        b[path.first()] = null
+        val out = mutableListOf<Pos>()
+        var cur = path.first()
+        for (i in 0 until path.lastIndex) {
+            val to = path[i + 1]
+            val cap = findSingleCaptured(b, cur, to, side)
+            if (cap != null) {
+                out.add(cap)
+                b[cap] = null
+            }
+            cur = to
+        }
+        return out
+    }
+
     /** True if [side] has at least one capture (before the “max captures” filter). */
     fun hasForcedCapture(board: Board, side: Side): Boolean =
         collectAllCapturePaths(board, side).isNotEmpty()

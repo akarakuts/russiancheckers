@@ -103,6 +103,20 @@ class RussianCheckersEngineTest {
     }
 
     @Test
+    fun capturedAlong_reportsCapturedSquares() {
+        val b = Board.empty().apply {
+            this[Pos(6, 1)] = Piece(Side.White, isKing = false)
+            this[Pos(5, 2)] = Piece(Side.Black, isKing = false)
+            this[Pos(3, 4)] = Piece(Side.Black, isKing = false)
+        }
+        val path = RussianCheckersEngine.legalPaths(b, Side.White).first()
+        val captured = RussianCheckersEngine.capturedAlong(b, path)
+        assertEquals(listOf(Pos(5, 2), Pos(3, 4)), captured)
+        val simple = RussianCheckersEngine.capturedAlong(Board.initial(), listOf(Pos(5, 2), Pos(4, 3)))
+        assertTrue(simple.isEmpty())
+    }
+
+    @Test
     fun noLegalMove_meansLoss() {
         val b = Board.empty().apply {
             this[Pos(0, 1)] = Piece(Side.White, isKing = false)

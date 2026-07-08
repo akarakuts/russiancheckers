@@ -62,6 +62,18 @@ fun SettingsScreen(
             checked = state.showCoordinates,
             onCheckedChange = vm::setShowCoordinates,
         )
+        SettingsToggleRow(
+            title = stringResource(R.string.settings_sound),
+            subtitle = stringResource(R.string.settings_sound_sub),
+            checked = state.soundEnabled,
+            onCheckedChange = vm::setSoundEnabled,
+        )
+        SettingsToggleRow(
+            title = stringResource(R.string.settings_haptics),
+            subtitle = stringResource(R.string.settings_haptics_sub),
+            checked = state.hapticsEnabled,
+            onCheckedChange = vm::setHapticsEnabled,
+        )
         if (state.botEnabled) {
             Text(
                 text = stringResource(R.string.settings_human_color),
@@ -126,6 +138,35 @@ fun SettingsScreen(
                     label = { Text(stringResource(R.string.difficulty_hard)) },
                     modifier = Modifier.semantics { role = Role.RadioButton },
                 )
+                FilterChip(
+                    selected = state.aiDifficulty == AiDifficulty.Expert,
+                    onClick = { vm.setAiDifficulty(AiDifficulty.Expert) },
+                    label = { Text(stringResource(R.string.difficulty_expert)) },
+                    modifier = Modifier.semantics { role = Role.RadioButton },
+                )
+            }
+        }
+        HorizontalDivider()
+        Text(
+            text = stringResource(R.string.settings_section_stats),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        if (state.stats.total == 0) {
+            Text(
+                text = stringResource(R.string.stats_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            StatsRow(stringResource(R.string.stats_wins), state.stats.wins.toString())
+            StatsRow(stringResource(R.string.stats_losses), state.stats.losses.toString())
+            StatsRow(stringResource(R.string.stats_streak), state.stats.winStreak.toString())
+            StatsRow(stringResource(R.string.stats_best_streak), state.stats.bestStreak.toString())
+            OutlinedButton(
+                onClick = vm::resetStats,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.stats_reset))
             }
         }
         HorizontalDivider()
@@ -139,6 +180,23 @@ fun SettingsScreen(
         ) {
             Text(stringResource(R.string.settings_new_party_clear))
         }
+    }
+}
+
+@Composable
+private fun StatsRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
     }
 }
 

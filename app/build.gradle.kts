@@ -20,8 +20,8 @@ android {
         applicationId = "ru.akarakuts.russiancheckers"
         minSdk = 24
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.0.7"
+        versionCode = 10
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,6 +67,12 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        unitTests {
+            // Robolectric-тестам ViewModel/репозитория нужны ресурсы и Application.
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -85,7 +91,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.profileinstaller)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
